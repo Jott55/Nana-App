@@ -19,7 +19,7 @@ export async function handleForm(formData: FormData) {
         return;
     }
 
-    const tokens = await auth.createUserTokens(form.data);
+    const tokens = await auth.createUserTokens({id: "1", ...form.data});
 
     await auth.setAuthCookies(tokens);
     redirect('/profile')

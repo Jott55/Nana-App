@@ -1,6 +1,6 @@
 export interface UserJwtPayload {
+    id: string,
     name: string,
-    password: string
     iat?: number,
     exp?: number
     [key: string]: unknown
