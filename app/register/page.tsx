@@ -50,6 +50,10 @@ export default async function Register() {
                     <input className="border" id="register-password" type="password" name="password" />
                     <button className="border mt-4" type="submit">Send</button>
                 </form>
+            <div className="mt-4">
+                <h2>Needs login?</h2>
+                <p>Login <a href="/login">here</a></p>
+            </div>
             </div>
         </div>
     )

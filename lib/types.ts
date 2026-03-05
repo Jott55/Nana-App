@@ -23,4 +23,9 @@ export interface UserInsert {
     password: string
 }
 
+export interface ResponseJson {
+    success: boolean
+    msg?: string
+}
+
 export type UserSafe = Omit<UserUnsafe, 'password' | 'created_at'>

@@ -49,6 +49,10 @@ export default async function Login() {
                     <input className="border" id="login-password" type="password" name="password" />
                     <button className="border mt-4" type="submit">Send</button>
                 </form>
+                <div className="mt-4">
+                    <h2>No account?</h2>
+                    <p>Register <a href="/register">here</a></p>
+                </div>
             </div>
         </div>
     )

@@ -10,8 +10,8 @@ const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET!;
 const access_key = new TextEncoder().encode(ACCESS_TOKEN_SECRET);
 const refresh_key = new TextEncoder().encode(REFRESH_TOKEN_SECRET);
 
-const ACCESS_TOKEN_TIMEOUT = '10s';
-const REFRESH_TOKEN_TIMEOUT = '30s';
+const ACCESS_TOKEN_TIMEOUT = '5m';
+const REFRESH_TOKEN_TIMEOUT = '7d';
 
 export async function isValidToken(): Promise<boolean> {
     const cookieStore = await cookies();
@@ -20,7 +20,7 @@ export async function isValidToken(): Promise<boolean> {
         return false;
     }
     
-    const payload = verifyTokenAccess(token.value);
+    const payload = await verifyTokenAccess(token.value);
     
     if (!payload) {
         return false;
@@ -34,6 +34,7 @@ export async function verifyTokenAccess(token: string): Promise<types.UserJwtPay
         const result = await jwtVerify(token, access_key);
         return result.payload as types.UserJwtPayload
     } catch (err) {
+        if (err)
         console.error(err);
         return null;
     }
@@ -65,7 +66,7 @@ export async function generateTokenRefresh(payload: types.UserJwtPayload): Promi
         .sign(refresh_key);
 }
 
-export async function generateAuthTokens(payload: types.UserJwtPayload): Promise<types.UserTokens>  {
+export async function createUserTokens(payload: types.UserJwtPayload): Promise<types.UserTokens>  {
     return {
         accessToken: await generateTokenAccess(payload),
         refreshToken: await generateTokenRefresh(payload),
@@ -73,7 +74,7 @@ export async function generateAuthTokens(payload: types.UserJwtPayload): Promise
 }
 
 export async function setAuthCookies(tokens: types.UserTokens, responseCookies?: ResponseCookies ): Promise<void> {
-    const cookieStore = responseCookies ? responseCookies : await cookies()
+    const cookieStore =  responseCookies ?? await cookies()
 
     cookieStore.set('accessToken', tokens.accessToken, {
         httpOnly: true,
@@ -87,7 +88,8 @@ export async function setAuthCookies(tokens: types.UserTokens, responseCookies?:
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
-        maxAge: ms(REFRESH_TOKEN_TIMEOUT) / 1000
+        maxAge: ms(REFRESH_TOKEN_TIMEOUT) / 1000,
+        path: '/'
     })
 }
 
@@ -96,10 +98,4 @@ export async function clearAuthCookies(responseCookies?: ResponseCookies): Promi
 
     cookieStore.delete('accessToken');
     cookieStore.delete('refreshToken');
-}
-
-export async function createUserTokens(payload: types.UserJwtPayload): Promise<types.UserTokens> {
-    const accessToken = await generateTokenAccess(payload);
-    const refreshToken = await generateTokenRefresh(payload);
-    return {accessToken, refreshToken};
 }

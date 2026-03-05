@@ -7,27 +7,45 @@ export async function proxy(request: NextRequest) {
     const accessToken = request.cookies.get('accessToken')?.value;
     const refreshToken = request.cookies.get('refreshToken')?.value;
 
+    const guardPaths = ['/profile'];
+    const authPaths = ['/register', '/login'];
+
+    const isGuardPath = guardPaths.some(path =>
+        request.nextUrl.pathname.startsWith(path)
+    );
+
+    const isAuthPath = authPaths.some(path =>
+        request.nextUrl.pathname.startsWith(path)
+    );
+
     // valid access == enter
     if (accessToken) {
-        const verifiedAccessToken  = await auth.verifyTokenAccess(accessToken);
-       
+        const verifiedAccessToken = await auth.verifyTokenAccess(accessToken);
         if (verifiedAccessToken) {
-            return NextResponse.next();
+
+            if (isGuardPath) {
+                return NextResponse.next();
+            }
+
+            // no login page for authenticated users
+            if (isAuthPath) {
+                return NextResponse.redirect(new URL('/', request.url));
+            }
         }
     }
 
     // no valid access token but valid refresh
-    if (refreshToken) {
+    if ((!accessToken || !await auth.verifyTokenAccess(accessToken)) && refreshToken) {
         const verifiedRefreshToken = await auth.verifyTokenRefresh(refreshToken);
 
         if (verifiedRefreshToken) {
-            const tokens = await auth.generateAuthTokens({
+            const tokens = await auth.createUserTokens({
                 id: verifiedRefreshToken.id,
                 name: verifiedRefreshToken.name,
             });
-            
+
             const response = NextResponse.next();
-            
+
             await auth.setAuthCookies(tokens, response.cookies)
 
             return response;
@@ -36,13 +54,19 @@ export async function proxy(request: NextRequest) {
         const responseLogin = NextResponse.redirect(new URL('/login', request.url))
 
         await auth.clearAuthCookies(responseLogin.cookies);
-        
+
         return responseLogin;
     }
 
-    return NextResponse.redirect(new URL('/login', request.url));
+    if (isAuthPath) {
+        return NextResponse.next();
+    }
+
+
+    // fail safe
+    return NextResponse.redirect('/login');
 }
 
 export const config = {
-    matcher: "/profile"
+    matcher: ["/profile", '/login', '/register']
 }

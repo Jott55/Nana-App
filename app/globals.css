@@ -3,3 +3,16 @@
 body {
     height: 100vh;
 }
+
+a {
+    color: hsl(240, 92%, 44%);
+    text-decoration: underline;
+}
+
+a:hover {
+    color: hsl(240, 70%, 66%);
+}
+
+a:active {
+    color: hsl(240, 15%, 48%);
+}
