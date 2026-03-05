@@ -11,7 +11,7 @@ export interface UserTokens {
     refreshToken: string
 }
 
-export interface User {
+export interface UserUnsafe {
     id: string,
     name: string,
     password?: string
@@ -23,4 +23,4 @@ export interface UserInsert {
     password: string
 }
 
-export type UserSafe = Omit<User, 'password' | 'created_at'>
+export type UserSafe = Omit<UserUnsafe, 'password' | 'created_at'>

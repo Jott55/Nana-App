@@ -1,10 +1,10 @@
-import { auth, db } from "@/lib/exports";
+import { auth, db, types } from "@/lib/exports";
 import { redirect } from "next/navigation";
 import z from "zod";
 
 export async function handleForm(formData: FormData) {
+    // register page
     'use server'
-    // login page
     const schema = z.object({
         name: z.string(),
         password: z.string(),
@@ -16,20 +16,28 @@ export async function handleForm(formData: FormData) {
     });
 
     if (!form.success) {
-        console.log('form error')
+        console.log('form not able to parse');
         return;
     }
 
-    const user = await db.verifyUser(form.data);
-    
-    if (!user) {
-        console.log('user error')
+    const user: types.UserInsert = form.data;
+
+    console.log('creating database')
+    const result = await db.createUser(user);
+
+    if (!result) {
+        console.log('no result');
         return;
     }
+    console.log('result: ', result);
+    const tokens = await auth.createUserTokens({id: result.id, name: result.name});
 
-    await auth.createUserTokens({id: user.id, name: user.name});
+    console.log('setting auth cookies');
+    await auth.setAuthCookies(tokens);
     redirect('/profile')
 }
+
+
 export default async function Register() {
     return (
         <div className="flex mx-auto w-md h-full items-center">

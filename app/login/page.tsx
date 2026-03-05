@@ -3,8 +3,8 @@ import { redirect } from "next/navigation";
 import z, { string } from "zod"
 
 export async function handleForm(formData: FormData) {
-    // register page
     'use server'
+    // login page
     const schema = z.object({
         name: z.string(),
         password: z.string(),
@@ -16,28 +16,23 @@ export async function handleForm(formData: FormData) {
     });
 
     if (!form.success) {
-        console.log('form not able to parse');
+        console.log('form error')
         return;
     }
 
-    const user: types.UserInsert = form.data;
-
-    console.log('creating database')
-    const result = await db.createUser(user);
-
-    if (!result) {
-        console.log('no result');
+    const user = await db.verifyUser(form.data);
+    
+    if (!user) {
+        console.log('user error')
         return;
     }
-    console.log('result: ', result);
-    const tokens = await auth.createUserTokens({id: result.id, name: result.name});
 
-    console.log('setting auth cookies');
+    const tokens = await auth.createUserTokens({id: user.id, name: user.name});
+    
     await auth.setAuthCookies(tokens);
+    
     redirect('/profile')
 }
-
-
 
 export default async function Login() {
     // form -> generateToken -> store it

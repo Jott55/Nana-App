@@ -9,7 +9,7 @@ const sql = postgres(process.env.POSTGRES_URL!,
         ssl: process.env.NODE_ENV === 'production' ? 'require' : false
     });
 
-export async function createUser(user: types.UserInsert): Promise<types.User | null> {
+export async function createUser(user: types.UserInsert): Promise<types.UserSafe | null> {
 
     const userExists = await findUserByName(user.name);
     if (userExists) {
@@ -19,14 +19,15 @@ export async function createUser(user: types.UserInsert): Promise<types.User | n
     const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
 
     try {
-        await sql`
-            INSERT INTO users (
-                name, password
-            ) VALUES (
+        const result = await sql<types.UserUnsafe[]>`
+            INSERT INTO users 
+                (name, password)
+            VALUES (
                 ${user.name}, ${hashedPassword} 
             )
         `;
-        return await findUserByName(user.name);
+        const userUnsafe = await findUserByName(user.name);
+        return  userUnsafe ? sanitizeUser(userUnsafe) : null;
     } catch (error) {
         console.error(error);
     }
@@ -46,12 +47,12 @@ export async function verifyUser(user: types.UserInsert): Promise<types.UserSafe
         return null;
     }
 
-    return existingUser;
+    return sanitizeUser(existingUser);
 }
 
 export async function findUserByName(name: string) {
     try {
-        const result = await sql<types.User[]>`
+        const result = await sql<types.UserUnsafe[]>`
             SELECT 
                 user_id, name, password, created_at
             FROM users
@@ -67,7 +68,7 @@ export async function findUserByName(name: string) {
 
 export async function findUserById(id: number) {
     try {
-        const result = await sql<types.User[]>`
+        const result = await sql<types.UserUnsafe[]>`
             SELECT
                 user_id, name, password, created_at
             FROM users
@@ -95,7 +96,7 @@ export async function deleteUserById(id: string) {
     return null;
 }
 
-export async function updateUser(user: types.User) {
+export async function updateUser(user: types.UserUnsafe) {
     if (!user.password) {
         return null;
     }
@@ -138,4 +139,9 @@ export async function deleteTables() {
     } catch (error) {
         console.error(error);
     }
+}
+
+export function sanitizeUser(user: types.UserUnsafe): types.UserSafe {
+    const {password, created_at, ...userSafe} = user;
+    return userSafe;
 }
