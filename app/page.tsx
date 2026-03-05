@@ -14,6 +14,7 @@ export default async function Home() {
       <p>Go to <a href="http://localhost:3000/login">http://localhost:3000/login</a></p>
       <p>Go to <a href="http://localhost:3000/register">http://localhost:3000/register</a></p>
       <p>Go to <a href="http://localhost:3000/profile">http://localhost:3000/profile</a></p>
+      <p>Go to <a href="http://localhost:3000/admin">http://localhost:3000/admin</a></p>
       <button onClick={handleLogout} className="rounded-2xl border p-4 hover:bg-gray-100 active:bg-gray-200">Logout</button>
     </div>
   );
