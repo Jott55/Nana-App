@@ -1,8 +1,9 @@
-import { auth } from "@/lib/exports";
+import { auth, db, types } from "@/lib/exports";
 import { redirect } from "next/navigation";
 import z, { string } from "zod"
 
 export async function handleForm(formData: FormData) {
+    // register page
     'use server'
     const schema = z.object({
         name: z.string(),
@@ -19,8 +20,19 @@ export async function handleForm(formData: FormData) {
         return;
     }
 
-    const tokens = await auth.createUserTokens({id: "1", ...form.data});
+    const user: types.UserInsert = form.data;
 
+    console.log('creating database')
+    const result = await db.createUser(user);
+
+    if (!result) {
+        console.log('no result');
+        return;
+    }
+    console.log('result: ', result);
+    const tokens = await auth.createUserTokens({id: result.id, name: result.name});
+
+    console.log('setting auth cookies');
     await auth.setAuthCookies(tokens);
     redirect('/profile')
 }
