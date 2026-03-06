@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
     const guardPaths = ['/profile'];
     const authPaths = ['/register', '/login'];
 
-    const isGuardPath = guardPaths.some(path =>
+    const isProtectedPath = guardPaths.some(path =>
         request.nextUrl.pathname.startsWith(path)
     );
 
@@ -23,7 +23,7 @@ export async function proxy(request: NextRequest) {
         const verifiedAccessToken = await auth.verifyTokenAccess(accessToken);
         if (verifiedAccessToken) {
 
-            if (isGuardPath) {
+            if (isProtectedPath) {
                 return NextResponse.next();
             }
 
@@ -35,7 +35,7 @@ export async function proxy(request: NextRequest) {
     }
 
     // no valid access token but valid refresh
-    if ((!accessToken || !await auth.verifyTokenAccess(accessToken)) && refreshToken) {
+    if (refreshToken) {
         const verifiedRefreshToken = await auth.verifyTokenRefresh(refreshToken);
 
         if (verifiedRefreshToken) {
@@ -44,8 +44,8 @@ export async function proxy(request: NextRequest) {
                 name: verifiedRefreshToken.name,
             });
 
-            const response = NextResponse.next();
-
+            const response = isAuthPath ? NextResponse.redirect(new URL('/', request.url)) : NextResponse.next();
+            
             await auth.setAuthCookies(tokens, response.cookies)
 
             return response;
@@ -64,7 +64,7 @@ export async function proxy(request: NextRequest) {
 
 
     // fail safe
-    return NextResponse.redirect('/login');
+    return NextResponse.redirect(new URL('/login', request.url));
 }
 
 export const config = {
