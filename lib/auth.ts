@@ -1,4 +1,4 @@
-import { JWTPayload, SignJWT, jwtVerify } from 'jose';
+import { JWTPayload, SignJWT, errors, jwtVerify } from 'jose';
 import ms from 'ms';
 
 import { cookies } from "next/headers";
@@ -13,28 +13,18 @@ const refresh_key = new TextEncoder().encode(REFRESH_TOKEN_SECRET);
 const ACCESS_TOKEN_TIMEOUT = '5m';
 const REFRESH_TOKEN_TIMEOUT = '7d';
 
-export async function isValidToken(): Promise<boolean> {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('accessToken');
-    if (!token) {
-        return false;
-    }
-    
-    const payload = await verifyTokenAccess(token.value);
-    
-    if (!payload) {
-        return false;
-    }
-
-    return true;
-}
-
 export async function verifyTokenAccess(token: string): Promise<types.UserJwtPayload | null> {
     try {
         const result = await jwtVerify(token, access_key);
         return result.payload as types.UserJwtPayload
     } catch (err) {
-        if (err)
+        if (err instanceof errors.JWTExpired) {
+            return null;
+        } else if (err instanceof errors.JWTInvalid) {
+            console.error(`Invalid token ${err}`);
+        } else if (err instanceof errors.JWSSignatureVerificationFailed) {
+            console.error(`Unwanted signature identitfied in token: ${token}`);
+        }
         console.error(err);
         return null;
     }
