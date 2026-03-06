@@ -25,9 +25,10 @@ export async function createUser(user: types.UserInsert): Promise<types.UserSafe
             VALUES (
                 ${user.name}, ${hashedPassword} 
             )
+            RETURNING user_id, name, created_at
         `;
-        const userUnsafe = await findUserByName(user.name);
-        return  userUnsafe ? sanitizeUser(userUnsafe) : null;
+        
+        return result.length===1 ? sanitizeUser(result[0]) : null;
     } catch (error) {
         console.error(error);
     }
@@ -101,11 +102,13 @@ export async function updateUser(user: types.UserUnsafe) {
         return null;
     }
 
+    const hashedPassword = await bcrypt.hash(user.password, SALT_ROUNDS);
+
     try {
         await sql`
             UPDATE users SET 
                 name = ${user.name}, 
-                password = ${user.password}
+                password = ${hashedPassword}
             WHERE user_id=${user.id}
         `;
     } catch (error) {
@@ -121,7 +124,7 @@ export async function createTables() {
             CREATE TABLE IF NOT EXISTS users (
                 user_id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
                 name varchar(64) NOT NULL,
-                password varchar(64) NOT NULL,
+                password varchar(255) NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )
         `;
