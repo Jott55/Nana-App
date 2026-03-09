@@ -1,5 +1,6 @@
 'use server'
 
+import { LinkButton } from "@/components/linkButton";
 import { auth } from "@/lib/exports";
 
 export async function handleLogout() {
@@ -9,13 +10,17 @@ export async function handleLogout() {
 
 export default async function Home() {
   return (
-    <div className="">
+    <div className="flex flex-col gap-y-4  ">
       <p>Hello world, this is the default page</p>
-      <p>Go to <a href="http://localhost:3000/login">http://localhost:3000/login</a></p>
-      <p>Go to <a href="http://localhost:3000/register">http://localhost:3000/register</a></p>
-      <p>Go to <a href="http://localhost:3000/profile">http://localhost:3000/profile</a></p>
-      <p>Go to <a href="http://localhost:3000/admin">http://localhost:3000/admin</a></p>
-      <button onClick={handleLogout} className="rounded-2xl border p-4 hover:bg-gray-100 active:bg-gray-200">Logout</button>
+      <div className="flex gap-x-4 items-center justify-between ">
+        <div className="flex gap-x-4 items-center">
+          <LinkButton href="/login">Login</LinkButton>
+          <LinkButton href="/register">Register</LinkButton>
+          <LinkButton href="/profile">Profile</LinkButton>
+          <LinkButton href="/admin">Admin</LinkButton>
+        </div>
+        <button onClick={handleLogout} className="rounded-2xl border p-4 shadow-[0px_2px_2px] bg-gray-700  hover:bg-gray-600 active:bg-gray-500">Logout</button>
+      </div>
     </div>
   );
 }

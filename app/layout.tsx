@@ -1,4 +1,11 @@
 import "./globals.css";
+import { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Nana",
+  description: "simple auth app",
+}
+
 
 export default function RootLayout({
   children,
@@ -7,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className="m-auto max-w-[90%]">
         {children}
       </body>
     </html>

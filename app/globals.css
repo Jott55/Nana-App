@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+}
+
 body {
     height: 100vh;
+    margin: auto;
+    font-size: 1.25em;
+    font-family: serif;
+    background-color: #000000;
+    color: white;
 }
 
-a {
-    color: hsl(240, 92%, 44%);
-    text-decoration: underline;
+h1, h2, h3, h4, h5, h6 {
+    font-family: sans-serif;
 }
 
-a:hover {
-    color: hsl(240, 70%, 66%);
-}
-
-a:active {
-    color: hsl(240, 15%, 48%);
-}
+a:link { text-decoration: none;}
