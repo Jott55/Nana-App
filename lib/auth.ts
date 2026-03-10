@@ -1,8 +1,9 @@
 import { JWTPayload, SignJWT, errors, jwtVerify } from 'jose';
 import ms from 'ms';
+import bcrypt from 'bcrypt';
 
 import { cookies } from "next/headers";
-import { types } from './exports';
+import { db, types } from './exports';
 import { RequestCookie, RequestCookies, ResponseCookies } from 'next/dist/compiled/@edge-runtime/cookies';
 
 const ACCESS_TOKEN_SECRET = process.env.ACCESS_TOKEN_SECRET!;
@@ -33,14 +34,16 @@ export async function verifyTokenAccess(token: string): Promise<types.UserJwtPay
 export async function verifyTokenRefresh(token: string): Promise<types.UserJwtPayload | null> {
     try {
         const result = await jwtVerify(token, refresh_key);
-        return result.payload as types.UserJwtPayload;
+        const payload = result.payload as types.UserJwtPayload;
+        const tokens = await db.findValidTokensByUserId(payload.id);
+        return tokens?.some(tk => tk.token === token) ? payload : null;
     } catch (err) {
         console.error(err);
-        return null;
     }
+    return null;
 }
 
-export async function generateTokenAccess(payload: types.UserJwtPayload): Promise<string> {
+async function generateTokenAccess(payload: types.UserJwtPayload): Promise<string> {
     return await new SignJWT(payload)
         .setProtectedHeader({alg: 'HS256'})
         .setIssuedAt()
@@ -57,10 +60,12 @@ export async function generateTokenRefresh(payload: types.UserJwtPayload): Promi
 }
 
 export async function createUserTokens(payload: types.UserJwtPayload): Promise<types.UserTokens>  {
-    return {
+    const tokens =  {
         accessToken: await generateTokenAccess(payload),
         refreshToken: await generateTokenRefresh(payload),
     };
+    await db.createToken(payload.id, tokens.refreshToken, new Date(Date.now()+ ms(REFRESH_TOKEN_TIMEOUT)).toISOString());
+    return tokens;
 }
 
 export async function setAuthCookies(tokens: types.UserTokens, responseCookies?: ResponseCookies ): Promise<void> {
@@ -86,6 +91,59 @@ export async function setAuthCookies(tokens: types.UserTokens, responseCookies?:
 export async function clearAuthCookies(responseCookies?: ResponseCookies): Promise<void> {
     const cookieStore = responseCookies? responseCookies : await cookies();
 
+    const refresh_cookie = cookieStore.get('refreshToken');
+    if (refresh_cookie) {
+        const refresh = await verifyTokenRefresh(refresh_cookie.value);
+        if (refresh) {
+            await db.deleteTokenById(refresh.id);
+        }
+    }
     cookieStore.delete('accessToken');
     cookieStore.delete('refreshToken');
+}
+
+
+export async function verifyUser(user: types.UserInsert): Promise<types.UserSafe | null> {
+    const existingUser = await db.findUserByName(user.name);
+    console.log(`existing user ${existingUser}`)
+
+    if (!existingUser || !existingUser.password) {
+        return null;
+    }
+
+    const isVerified = await bcrypt.compare(user.password, existingUser.password);
+    if (!isVerified) {
+        return null;
+    }
+
+    return db.sanitizeUser(existingUser);
+}
+
+export async function logUser(user: types.UserInsert): Promise<types.UserTokens | null> {
+    
+    const safe_user = await verifyUser(user);
+
+    if (!safe_user) {
+        console.log('safe_user error')
+        return null;
+    }
+   
+    const tokens = await createUserTokens({ id: safe_user.user_id, name: safe_user.name });
+
+    return tokens;
+}
+
+export async function registerUser(user: types.UserInsert): Promise<types.UserTokens | null> {
+        console.log('creating database')
+        const safe_user = await db.createUser(user);
+    
+        if (!safe_user) {
+            console.log('no result');
+            return null;
+        }
+        
+        console.log('result: ', safe_user);
+
+        const tokens = await createUserTokens({ id: safe_user.user_id, name: safe_user.name });        
+        return tokens;
 }

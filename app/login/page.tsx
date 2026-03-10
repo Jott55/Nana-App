@@ -22,18 +22,14 @@ export async function handleForm(formData: FormData) {
         return;
     }
 
-    const user = await db.verifyUser(form.data);
-
-    if (!user) {
-        console.log('user error')
+    const tokens = await auth.logUser(form.data);
+    if (!tokens) {
         return;
     }
 
-    const tokens = await auth.createUserTokens({ id: user.id, name: user.name });
-
     await auth.setAuthCookies(tokens);
 
-    redirect('/profile')
+    redirect('/profile');
 }
 
 export default async function Login() {

@@ -24,17 +24,11 @@ export async function handleForm(formData: FormData) {
 
     const user: types.UserInsert = form.data;
 
-    console.log('creating database')
-    const result = await db.createUser(user);
-
-    if (!result) {
-        console.log('no result');
+    const tokens = await auth.registerUser(user) 
+    if (!tokens) {
         return;
     }
-    console.log('result: ', result);
-    const tokens = await auth.createUserTokens({ id: result.id, name: result.name });
 
-    console.log('setting auth cookies');
     await auth.setAuthCookies(tokens);
     redirect('/profile')
 }

@@ -12,7 +12,7 @@ export interface UserTokens {
 }
 
 export interface UserUnsafe {
-    id: string,
+    user_id: string,
     name: string,
     password?: string
     created_at: string
@@ -28,4 +28,14 @@ export interface ResponseJson {
     msg?: string
 }
 
+export interface SecureToken {
+    token_id: string,
+    token: string
+    expires: string
+}
+
 export type UserSafe = Omit<UserUnsafe, 'password' | 'created_at'>
+
+export interface TestTableExists {
+    exists: boolean
+}

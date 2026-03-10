@@ -1,6 +1,6 @@
 'use server'
 
-import { LinkButton } from "@/components/linkButton";
+import { LinkButton } from "@/components/LinkButton";
 import { auth } from "@/lib/exports";
 
 export async function handleLogout() {
